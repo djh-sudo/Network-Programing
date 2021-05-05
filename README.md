@@ -50,7 +50,7 @@ connect(udpSocket,&QUdpSocket::readyRead,[=](){
 
 ```C
 connect(socket,&QTcpSocket::connected,[=](){
-    connect(socket,&QTcpSocket::readyRead,[&](){
+    connect(socket,&QTcpSocket::readyRead,[=](){
     
     //write your code here
     });
