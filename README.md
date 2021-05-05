@@ -58,5 +58,5 @@ connect(socket,&QTcpSocket::connected,[=](){
 ```
 # To be continue...
 ### 服务器端效果展示
-
+![](https://github.com/djh-sudo/Network-Programing/blob/main/Image/Server.png)
 ### 客户端效果展示
