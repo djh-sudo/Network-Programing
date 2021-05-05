@@ -44,7 +44,7 @@ connect(udpSocket,&QUdpSocket::readyRead,[=](){
 
 同时，客户端是主动端，服务器是被动端，所以客户端需要主动去连接服务器
 ```C
-    socket->connectToHost(QHostAddress(ip),port)});
+    socket->connectToHost(QHostAddress(ip),port);
 ```
 连接成功后，同样会触发一个`conected`信号
 
@@ -60,4 +60,6 @@ connect(socket,&QTcpSocket::connected,[=](){
 ### 服务器端效果展示
 ![](https://github.com/djh-sudo/Network-Programing/blob/main/Image/Server.png)
 ### 客户端效果展示
-![](https://github.com/djh-sudo/Network-Programing/blob/main/Image/Client.png)
+<div align=center><img width="600" height="600" src="https://github.com/djh-sudo/Network-Programing/blob/main/Image/Client.png"/></div>
+
+
