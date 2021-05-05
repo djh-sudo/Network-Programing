@@ -2,9 +2,7 @@
 利用QT编写一个QQ聊天程序
 # 一个简单的聊天程序由服务端(`Server`)和客户端(`Client`)组成。
 ## 编程库
-* 1.`QTcpServer`
-* 2.`QTcpSocket`
-* 3.`QUdpSocket`
+* 1.`QTcpServer`   2. `QTcpSocket`     3.`QUdpSocket`
 ## 二者交互原理
 ### 服务器(`Server`)
 * 1.服务器端监听端口
@@ -27,7 +25,7 @@ connect(tcpServer,&QTcpServer::newConnection,[=](){
         });
    });
 ```
-* 3. `Udp`通信
+* 3.`Udp`通信
 `UDP`通信由于没有事先建立一个逻辑连接,所以服务器端监听端口后，只要有数据发送到对应端口(不丢包的情况下)，就能够收到数据，自动触发`readyRead`信号
 ```C
 connect(udpSocket,&QUdpSocket::readyRead,[=](){
@@ -57,4 +55,4 @@ connect(socket,&QTcpSocket::connected,[=](){
     });
 });
 ```
-To be continue...
+# To be continue...
