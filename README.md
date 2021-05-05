@@ -37,13 +37,14 @@ connect(udpSocket,&QUdpSocket::readyRead,[=](){
         QString res = array.data();
         
         // write your code here to handle the data
+    });
 ```
 ### 客户端(`Client`)
 客户端同样需要连接一个`readyRead`信号，用于接收来自服务器的数据
 
 同时，客户端是主动端，服务器是被动端，所以客户端需要主动去连接服务器
 ```C
-    socket->connectToHost(QHostAddress(ip),port);
+    socket->connectToHost(QHostAddress(ip),port)});
 ```
 连接成功后，同样会触发一个`conected`信号
 
@@ -56,3 +57,6 @@ connect(socket,&QTcpSocket::connected,[=](){
 });
 ```
 # To be continue...
+### 服务器端效果展示
+
+### 客户端效果展示
