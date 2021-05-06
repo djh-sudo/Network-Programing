@@ -39,6 +39,18 @@ connect(udpSocket,&QUdpSocket::readyRead,[=](){
         // write your code here to handle the data
     });
 ```
+##### `Server`源程序结构
+```C
+cachefile.h             //文件数据读写
+database.h              //数据库操作
+func.h                  //宏定义以及cpu使用率测量
+md5.h                   //计算字符串md5
+ringsprogressbar.h      //绘制ringsprogress
+server.h                //服务器核心模块
+user.h                  //用户
+userdata.h              //用户数据格式
+```
+
 ### 客户端(`Client`)
 客户端同样需要连接一个`readyRead`信号，用于接收来自服务器的数据
 
@@ -55,6 +67,18 @@ connect(socket,&QTcpSocket::connected,[=](){
     //write your code here
     });
 });
+```
+#### `Client`源程序结构
+```C
+cachefile.h                 //缓存文件读写
+client.h                    //客户端登录模块
+mg5.h                       //计算md5模块
+readonlydelegate.h          //只读设置
+register.h                  //注册模块
+toast.h                     //定制消息
+user.h                      //用户管理
+userdata.h                  //用户数据
+userpanel.h                 //用户面板(核心)
 ```
 # To be continue...
 ### 服务器端效果展示
