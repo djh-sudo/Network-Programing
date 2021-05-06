@@ -1,0 +1,30 @@
+<RCC>
+    <qresource prefix="/">
+        <file>error.png</file>
+        <file>right.png</file>
+        <file>ID.png</file>
+        <file>PSW.png</file>
+        <file>QTUM.png</file>
+        <file>QQ.png</file>
+        <file>title.png</file>
+        <file>stop.png</file>
+        <file>QQ1.png</file>
+        <file>eye.png</file>
+        <file>search.png</file>
+        <file>s1.png</file>
+        <file>s2.png</file>
+        <file>s3.png</file>
+        <file>s4.png</file>
+        <file>s5.png</file>
+        <file>s6.png</file>
+        <file>s7.png</file>
+        <file>s8.png</file>
+        <file>s9.png</file>
+        <file>red.png</file>
+        <file>empty.png</file>
+        <file>group.png</file>
+        <file>add.png</file>
+        <file>people.png</file>
+        <file>waiting.png</file>
+    </qresource>
+</RCC>
