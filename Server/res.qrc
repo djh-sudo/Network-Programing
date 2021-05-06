@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>QQ.png</file>
+        <file>off.png</file>
+        <file>on.png</file>
+        <file>group.png</file>
+    </qresource>
+</RCC>
