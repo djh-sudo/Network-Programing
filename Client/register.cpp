@@ -9,6 +9,7 @@
 int flag = 0;
 int check = 0;
 static bool index = true;
+extern QString __IP__;
 Register::Register(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::Register)
@@ -33,7 +34,7 @@ Register::Register(QWidget *parent) :
     //
 //    time->start(1000);
     connect(time,&QTimer::timeout,this,[=]{
-        QString ip = "127.0.0.1";
+        QString ip = __IP__;
         qint16 port = 8888;
         socket->connectToHost(QHostAddress(ip),port);
     });

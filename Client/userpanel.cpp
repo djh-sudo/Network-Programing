@@ -28,7 +28,7 @@ QSet<QString>set;
 QMap<int,int>userlist;//通过id号获得在表单中的位置
 QSet<int>groupID;
 static bool flag = false;
-
+extern QString __IP__;
 /********************* Construction function *********************/
 UserPanel::UserPanel(QWidget *parent) :
     QMainWindow(parent),
@@ -620,7 +620,7 @@ void UserPanel::on_send_clicked(){//发送消息给对方
         writetoCache(friendId);
         ui->textEdit->clear();
         QString res = "oth##" + id + "##" + ui->label->text() + "##" + ui->label_2->text() + "##" + time + "##" + content + "##";
-        udpSocket->writeDatagram(res.toUtf8().data(),QHostAddress("127.0.0.1"),9999);
+        udpSocket->writeDatagram(res.toUtf8().data(),QHostAddress(__IP__),9999);
     }else{
         QString time = currentTime();
         QString id = QString::number(user.getId());
@@ -641,7 +641,7 @@ void UserPanel::on_send_clicked(){//发送消息给对方
         ui->tableWidget->scrollToBottom();
         ui->textEdit->clear();
         QString res = "grp##" + id + "##" + ui->label->text() + "##" + ui->label_2->text() + "##" + time + "##" + content + "##";
-        udpSocket->writeDatagram(res.toUtf8().data(),QHostAddress("127.0.0.1"),9999);
+        udpSocket->writeDatagram(res.toUtf8().data(),QHostAddress(__IP__),9999);
     }
 }
 
@@ -784,9 +784,9 @@ void UserPanel::Exit(){
     error.addFile(tr(":/error.png"));
     ui->state->setIcon(error);
     ui->state2->setText("离线");
-    QMessageBox::warning(this,"Warning","\t\tConnection disconnected!\n\t\tServer error...");
-    UserPanel::close();
-    exit(0);
+//    QMessageBox::warning(this,"Warning","\t\tConnection disconnected!\n\t\tServer error...");
+//    UserPanel::close();
+//    exit(0);
 }
 
 /******************** search result ********************/

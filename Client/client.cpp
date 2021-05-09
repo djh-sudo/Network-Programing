@@ -13,6 +13,7 @@
 #include<QMessageBox>
 extern User user;
 static bool index = true;
+extern QString __IP__ = "127.0.0.1";
 Client::Client(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::Client)
@@ -21,18 +22,16 @@ Client::Client(QWidget *parent)
     socket = NULL;
     ui->login->setDefault(true);
     socket = new QTcpSocket(this);
-    time = new QTimer();
-    time->start(1000);
+//    time = new QTimer();
+    //time->start(1000);
     QRegExp rx("\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b");  //IP的正则表达式
     ui->lineEdit->setValidator(new QRegExpValidator(rx,this)); //设置
     socket->setProxy(QNetworkProxy::NoProxy);
     socket->abort();
 
-    connect(time,&QTimer::timeout,this,[=](){
-        QString ip = ui->lineEdit->text();
-        qint16 port = 8888;
-        socket->connectToHost(QHostAddress(ip),port);
-    });
+//    connect(time,&QTimer::timeout,this,[&](){
+
+//    });
 
     ui->userId->setStyleSheet("border:3px solid gray;border-radius:12px;padding:1px 4px");
     ui->login->setStyleSheet("border:3px;border-radius:12px;padding:1px 4px;background-color:rgba(0,201,87,1)");
@@ -48,7 +47,7 @@ Client::Client(QWidget *parent)
     //
     connect(socket,&QTcpSocket::connected,[=](){
         ui->label_3->setText("连接成功");
-        time->stop();
+//        time->stop();
         ui->connectServer->setEnabled(false);
         QIcon right;
         right.addFile(tr(":/right.png"));
@@ -59,7 +58,6 @@ Client::Client(QWidget *parent)
         connect(socket,&QTcpSocket::readyRead,[&](){
             //对收到的文件进行处理
             QByteArray buffer = socket->readAll();
-            qDebug()<<QString(buffer).section("##",0,0)<<QString(buffer).section("##",1,1);
             if(QString(buffer).section("##",0,0) == "login"){
                 if(QString(buffer).section("##",1,1) == "ok"){
                     int userId = QString(buffer).section("##",2,2).toUtf8().toInt();
@@ -67,16 +65,17 @@ Client::Client(QWidget *parent)
                     QString userPassword =QString(buffer).section("##",4,4);
                     bool state = QString(buffer).section("##",5,5).toUtf8().toInt();
                     int number = QString(buffer).section("##",6,6).toUtf8().toInt();
-                    qDebug()<<"login successfully";
+
                     user.setName(userName);
                     user.setPassword(userPassword);
                     user.setId(userId);
                     user.setState(state);
                     user.setFriendNumber(number);
                     user.setIpPort(userName,socket->localAddress().toString(),socket->localPort());
-                    if(time->isActive()){
-                        time->stop();
-                    }
+
+//                    if(time->isActive()){
+//                        time->stop();
+//                    }
                     this->hide();
                     emit panShow(ui->lineEdit->text());
                 }else if(QString(buffer).section("##",1,1) == "fail"){
@@ -101,7 +100,7 @@ Client::Client(QWidget *parent)
             error.addFile(tr(":/error.png"));
             ui->connectServer->setIcon(error);
             ui->label_3->setText("未连接请确认");
-            time->start(1000);
+//            time->start(1000);
             ui->connectServer->setEnabled(true);
             user.setState(false);
             if(socket!= NULL){
@@ -115,10 +114,10 @@ Client::Client(QWidget *parent)
 
 Client::~Client()
 {
-    if(time->isActive()){
-        time->stop();
-        delete time;
-    }
+//    if(time->isActive()){
+//        time->stop();
+//        delete time;
+//    }
     if(socket!=NULL){
         socket->disconnectFromHost();
         socket->close();
@@ -129,21 +128,27 @@ Client::~Client()
 
 void Client::on_connectServer_clicked()
 {
-    index = !index;
-    if(!index){
-        time->stop();
-        QIcon stop;
-        stop.addFile(tr(":/stop.png"));
-        ui->connectServer->setIcon(stop);
-        ui->label_3->setText("停止尝试");
-    }
-    if(index){
-        time->start(1000);
+    __IP__ = ui->lineEdit->text();
+//    index = !index;
+//    if(!index){
+//        time->stop();
+//        QIcon stop;
+//        stop.addFile(tr(":/stop.png"));
+//        ui->connectServer->setIcon(stop);
+//        ui->label_3->setText("停止尝试");
+//    }
+//    if(index){
+//        time->start(1000);
         QIcon error;
         error.addFile(tr(":/error.png"));
         ui->connectServer->setIcon(error);
         ui->label_3->setText("未连接请确认");
-    }
+        QString ip = __IP__;
+        qDebug()<<ip;
+        quint16 port = 8888;
+        socket->abort();
+        socket->connectToHost(QHostAddress(ip),port);
+//    }
 }
 
 void Client::on_login_clicked()//发送账户和密码验证
@@ -163,12 +168,20 @@ void Client::on_login_clicked()//发送账户和密码验证
 
 void Client::on_register_2_clicked()//
 {
+    if(socket!= NULL){
+        socket->disconnectFromHost();
+        socket->close();
+    }
+//    if(time->isActive())
+//        time->stop();
     this->hide();
     emit regShow();
     return;
 }
 
 void Client::showClt(){
+//    if(time->isActive())
+//        time->stop();
     this->show();
 }
 void Client::handle(QString s){//收到用户请求
@@ -177,7 +190,6 @@ void Client::handle(QString s){//收到用户请求
 
 //========================关闭窗口事件========================
 void Client::closeEvent(QCloseEvent *event){
-    qDebug()<<"close";
     emit quit();
     exit(0);
 }
