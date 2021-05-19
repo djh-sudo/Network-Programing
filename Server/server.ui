@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="res.qrc">
-    <normaloff>:/QQ.png</normaloff>:/QQ.png</iconset>
+    <normaloff>:/Server.png</normaloff>:/Server.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QTextEdit" name="online">

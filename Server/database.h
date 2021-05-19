@@ -40,8 +40,8 @@ public:
     bool addComponent(QString userGroupTable,QString gid,QString uid);
     int getGroupNumber(QString groupTableName,QString gid);
     bool insertComponent(QString groupTableName,QString gid,QString uid,QString name);
-    bool deleteGroup(QString groupTableName,QString groupId);
     bool createUserGroup(QString groupTableName,QString groupId);
+    bool deleteComponent(QString groupTableName,QString gid,QString uid);
     QString getGroupData(QString groupTableName,int groupId);
     bool setComponent(QString groupTableName,int groupId);//设置群聊人数
     QString getAllGroupInfo(QString groupTableName);

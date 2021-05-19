@@ -274,8 +274,14 @@ bool DataBase::is_Friend(QString id1,QString id2){
             if(query.value(0) == id2){
                 emit Send("[# is_Friend] <"+ id1 + "> and <" + id2 + "> is already be friend!");
                 return true;
-            }else
+            }else{
+                emit Send("[# is_Friend] <"+ id1 + "> and <" + id2 + "> is not friend!");
                 return false;
+            }
+        }
+        else{
+            emit Send("[# is_Friend] <"+ id1 + "> and <" + id2 + "> is not friend!");
+            return false;
         }
     }else{
         emit Send("[# is_Friend] " + query.lastError().text());
@@ -449,20 +455,31 @@ bool DataBase::insertComponent(QString groupTableName, QString gid, QString uid,
         return false;
     }
 }
-bool DataBase::deleteGroup(QString groupTableName, QString groupId){
-    if(deleteUserGroup(groupTableName,groupId)){
-        QString cmd = "delete from " +groupTableName + " where groupId = " + groupId + ";";
-        if(query.exec(cmd)){
-            emit Send("[# deletegroup] delete <" + groupId + "> is ok!");
-            return true;
-        }
-        else{
-            emit Send("[# error] "+query.lastError().text());
-            emit Send("[# deletegroup] delete <" + groupId + "> is failed!");
+
+bool DataBase::deleteComponent(QString groupTableName,QString gid, QString uid){
+    QString cmd = "delete from \"" + gid + "\" where userId = " + uid + ";";
+    if(query.exec(cmd)){
+        emit Send("[# deleteComponent] delete the user <" + uid +" > from group <" +gid + "> is ok");
+        int number = getGroupNumber(groupTableName,gid);
+        if(number>0){
+            number--;
+            cmd = "update " + groupTableName + " set number = " + QString::number(number) + " where groupId = " + gid + ";";
+            if(query.exec(cmd)){
+                emit Send("[# deleteComponent] update group number is ok!");
+                return true;
+            }
+            else{
+                emit Send("[# deleteComponent] update group number is failed!");
+                return false;
+            }
+        }else{
+            emit Send("[#deleteComponent] number of group <" + gid + "> is zero!");
             return false;
         }
-    }else{
-        emit Send("[# deleteGroup] delete group <" + groupId +"> is not meet constrain!");
+    }
+    else{
+        emit Send("[# deleteComponent] delete the user <" + uid +" > from group <" +gid + "> is failed");
+        emit Send("[# deleteComponent] " + query.lastError().text());
         return false;
     }
 }
@@ -481,16 +498,24 @@ bool DataBase::deleteGroup(QString groupTableName){
 bool DataBase::deleteUserGroup(QString groupTableName,QString groupId){
     QString cmd = "select groupId from " + groupTableName + " where groupId = " + groupId +";";
     if(query.exec(cmd)){
-        if(query.next() && query.value(0).isValid()){
-            cmd =  "drop table \"" + groupId +"\";";
+        if(query.next()){
+            cmd = "delete from " + groupTableName + " where groupId = " + groupId + ";";
             if(query.exec(cmd)){
-                emit Send("[# deleteUserGroup] delete group <" + groupId + "is ok!");
-                return true;
+                emit Send("[# deleteUserGroup] delete the group <" + groupId + "> from " + groupTableName + " is ok!");
+                cmd =  "drop table \"" + groupId +"\";";
+                if(query.exec(cmd)){
+                    emit Send("[# deleteUserGroup] delete group <" + groupId + "> is ok!");
+                    return true;
+                }else{
+                    emit Send("[# deleteUserGroup] group <" + groupId + "> is existed!, but failed to delete it");
+                    emit Send("[# deleteUserGroup] error "+query.lastError().text());
+                    return false;
+                }
             }else{
-                emit Send("[# deleteUserGroup] group <" + groupId + "> is existed!, but failed to delete it");
-                emit Send("[# deleteUserGroup] error "+query.lastError().text());
+                emit Send("[# deleteUserGroup] delete the group <" + groupId + "> from " + groupTableName + " is failed!");
                 return false;
             }
+
         }
         else{
             emit Send("[# deleteUserGroup] userGroup <" + groupId + "> is not exists!");
@@ -519,7 +544,7 @@ bool DataBase::setComponent(QString groupTableName, int groupId){
 QString DataBase::getGroupData(QString groupTableName, int groupId){
     QString cmd = "select * from " + groupTableName + " where groupId = " + QString::number(groupId) + ";";
     if(query.exec(cmd)){
-        if(query.next() && query.value(0).isValid()){
+        if(query.next()){
             emit Send("[# getGroupData] get GroupId ok!");
             QString res = query.value(0).toString() + "##" + query.value(1).toString()+ "##" +  query.value(2).toString() + "##";
             return res;

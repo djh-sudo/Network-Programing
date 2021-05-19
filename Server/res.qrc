@@ -4,5 +4,6 @@
         <file>off.png</file>
         <file>on.png</file>
         <file>group.png</file>
+        <file>Server.png</file>
     </qresource>
 </RCC>

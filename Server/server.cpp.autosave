@@ -621,7 +621,7 @@ bool Server::UserLogin(QString buffer,QTcpSocket*socket){//3
                     head = "oth##";
                 }
                 temp = head + QString::number(idSend) + "##" + name + "##" + temp;
-                res = temp + res;
+                res =  temp + res;
             }
             qDebug()<<"发送给客户端的消息内容 "<<res;
             socket->write(res.toUtf8().data());

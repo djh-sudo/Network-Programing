@@ -20,6 +20,7 @@ bool CacheFile::writeFile(QString name, QString data){
     else{
         file.write(data.toUtf8());
         file.close();
+        return true;
     }
 }
 QStringList CacheFile::readFile(QString name){
