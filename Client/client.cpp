@@ -73,9 +73,7 @@ Client::Client(QWidget *parent)
                     user.setFriendNumber(number);
                     user.setIpPort(userName,socket->localAddress().toString(),socket->localPort());
 
-//                    if(time->isActive()){
-//                        time->stop();
-//                    }
+
                     this->hide();
                     emit panShow(ui->lineEdit->text());
                 }else if(QString(buffer).section("##",1,1) == "fail"){

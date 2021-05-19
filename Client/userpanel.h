@@ -24,7 +24,11 @@
 #define NEW_COMPONENT_ADD_INTO_GROUP "addaf"
 #define OLD_COMPONENT_ADD_INTO_GROUP "addgf"
 #define DELETE_USER "del"
-
+#define CREATE_GROUP "crp"
+#define FAIL "fail"
+#define DELETE_GROUP "delg"
+#define ADMIN_DELETE_GROUP "dela"
+#define SYSTEM_FILE "system"
 namespace Ui {
 class UserPanel;
 }
@@ -68,6 +72,8 @@ private slots:
     void on_add_clicked();
     void on_component_clicked();
     void on_deleteFriend_clicked();
+    void on_deletegroup_clicked();
+
 
 signals:
     void quit();//quit()信号

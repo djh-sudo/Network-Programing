@@ -36,7 +36,7 @@ signals:
 private:
     Ui::Client *ui;
     QTcpSocket *socket;
-    QTimer* time;
+//    QTimer* time;
     void closeEvent(QCloseEvent*event);
 };
 #endif // CLIENT_H
