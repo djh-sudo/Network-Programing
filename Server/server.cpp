@@ -297,6 +297,7 @@ Server::Server(QWidget *parent)
         QHostAddress address;
         udpSocket->readDatagram(array.data(),array.size(),&address,&port);
         QString res = array.data();
+//        ui->online->append("[# debug] "+res);
         if(res.section("##",0,0) == OTHER_UDP_MESSAGE){
             QString idSend = res.section("##",1,1);
             QString idRev = res.section("##",2,2);
@@ -581,47 +582,48 @@ bool Server::UserLogin(QString buffer,QTcpSocket*socket){//3
             for(auto &it : message[uid]){
                 int idSend = message[uid].keys()[count++];//谁发送的消息
                 qDebug()<<"who "<<idSend;
-                QString temp = "";
-                QString name;
-                QString time = "";
-                QString content = "";
+
+                QString tempAll = "";
                 for(int i=0;i<it.size();i++){
-                    name = it[i].getName();
-                    time = it[i].getTime();
-                    content = it[i].getContent();
-                    temp = temp + time + "##" + content+ "##";
+                    QString name = it[i].getName();
+                    QString time = it[i].getTime();
+                    QString content = it[i].getContent();
+                    QString temp = time + "##" + content+ "##";
+
+//                    ui->online->append("[# debug ] " + temp);
+                    QString head = "";
+                    if (content == name + "请求添加你为好友!"){
+                        head =  "msg##";
+                    }
+                    else if(content == "添加为好友成功!"){
+                        head = "uagr##";
+                    }
+                    else if(name.contains(GROUP_MESSAGE)){//群聊信息
+                        head = "grp##" + QString::number(it.size())+"##";
+                        name = name.section("@",1,1);
+                    }
+                    else if(name != "grp" && content.contains("@")){//添加群聊
+                        head = "addaf##";
+                    }
+                    else if(name != "grp" && content.contains("$")){
+                        head = "addgf##";
+                    }
+                    else if(name == DELETE_USERS){
+                        head = "del##";
+                    }
+                    else if(name == "delg"){
+                        head = "delg##";
+                    }
+                    else if(name == "dela"){
+                        head = "dela##";
+                    }
+                    else{
+                        head = "oth##";
+                    }
+                    tempAll = tempAll + head + QString::number(idSend) + "##" + name + "##" + temp;
+
                 }
-                QString head = "";
-                if (content == name + "请求添加你为好友!"){
-                    head =  "msg##";
-                }
-                else if(content == "添加为好友成功!"){
-                    head = "uagr##";
-                }
-                else if(name.contains(GROUP_MESSAGE)){//群聊信息
-                    head = "grp##" + QString::number(it.size())+"##";
-                    name = name.section("@",1,1);
-                }
-                else if(name != "grp" && content.contains("@")){
-                    head = "addaf##";
-                }
-                else if(name != "grp" && content.contains("$")){
-                    head = "addgf##";
-                }
-                else if(name == DELETE_USERS){
-                    head = "del##";
-                }
-                else if(name == "delg"){
-                    head = "delg##";
-                }
-                else if(name == "dela"){
-                    head = "dela##";
-                }
-                else{
-                    head = "oth##";
-                }
-                temp = head + QString::number(idSend) + "##" + name + "##" + temp;
-                res = temp + res;
+                res = tempAll + res;
             }
             qDebug()<<"发送给客户端的消息内容 "<<res;
             socket->write(res.toUtf8().data());
