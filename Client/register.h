@@ -13,7 +13,6 @@ class Register : public QMainWindow
 
 public:
     explicit Register(QWidget *parent = nullptr);
-    void closeEvent(QCloseEvent *event);
     ~Register();
 
 private slots:

@@ -76,7 +76,6 @@ private slots:
 
 
 signals:
-    void quit();//quit()信号
     void sendData(QString s);//发送消息信号
 private:
     void closeEvent(QCloseEvent*event);

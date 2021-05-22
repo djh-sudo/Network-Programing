@@ -27,7 +27,7 @@ QVector<UserData>message;//消息队列
 QSet<QString>set;
 QMap<int,int>userlist;//通过id号获得在表单中的位置
 QSet<int>groupID;
-static bool flag = false;
+static bool flagFriend = false;
 extern QString __IP__;
 static bool flagGroup = false;
 
@@ -46,12 +46,16 @@ UserPanel::UserPanel(QWidget *parent) :
     set.clear();
     groupID.clear();
 
-    set.insert("ini");
-    set.insert("msg");
-    set.insert("agr");
-    set.insert("oth");
-    set.insert("addg");
-    set.insert("adda");
+    set.insert(INICIAL_LOGIN);
+    set.insert(MESSAGE);
+    set.insert(ACCEPT_TO_BE_FRIEND);
+    set.insert(OTHER_MESSAGE);
+    set.insert(NEW_COMPONENT_ADD_INTO_GROUP);
+    set.insert(OLD_COMPONENT_ADD_INTO_GROUP);
+    set.insert(GROUP_MESSAGE);
+    set.insert(DELETE_USER);
+    set.insert(DELETE_GROUP);
+    set.insert(ADMIN_DELETE_GROUP);
     //set the style
     QIcon head;
     head.addFile(tr(":/QQ.png"));
@@ -90,6 +94,8 @@ UserPanel::UserPanel(QWidget *parent) :
 /********************* Construction function *********************/
 void UserPanel::showPan(QString ip){
     this->show();
+    ui->addGroup->setEnabled(true);
+    ui->deleteFriend->setEnabled(true);
     //inicial the GUI
     ui->id->setText(QString::number(user.getId()));
     ui->name->setText(user.getName());
@@ -255,6 +261,8 @@ void UserPanel::showPan(QString ip){
             ui->userlist->setCurrentRow(0);
             ui->userlist->addItem(new QListWidgetItem(QIcon(":/QQ1.png"),"系统消息"));
             freshUserTable(0);
+            ui->tableWidget->clear();
+            ui->textEdit->setHidden(true);
             Toast::instance().show(Toast::INFO,QString::number(id) + "与你解除好友关系");
         }
         else if(res.section("##",0,0) == DELETE_GROUP){
@@ -283,7 +291,10 @@ void UserPanel::showPan(QString ip){
             ui->userlist->setCurrentRow(0);
             ui->userlist->addItem(new QListWidgetItem(QIcon(":/QQ1.png"),"系统消息"));
             freshUserTable(0);
+            ui->textEdit->setHidden(true);
+            ui->tableWidget->clear();
             Toast::instance().show(Toast::INFO, "管理员已解散群聊("+QString::number(gid)+")!");
+
         }
     });
 }
@@ -312,7 +323,9 @@ void UserPanel::on_lineEdit_returnPressed()//回车搜索
 
 /******************** receive info from server ********************/
 void UserPanel::handle(QString s){
-    ui->tableWidget->clear();
+    qDebug()<<"面板收到 "<<s;
+    if(s == "")
+        return;
     ui->tableWidget->setRowCount(0);
     QIcon right;
     right.addFile(tr(":/right.png"));
@@ -320,6 +333,10 @@ void UserPanel::handle(QString s){
     ui->state2->setText("在线");
     QStringList content = s.split("##");
     for(unsigned int i = 0;i < content.size();){
+        if(content[i] == ""){
+            i++;
+            continue;
+        }
         if(content[i] == "exit"){
             Exit();
             i = i + 1;
@@ -440,6 +457,9 @@ void UserPanel::writetoCache(QString id){
 void UserPanel::flashCache(QString id){
     CacheFile userFile = CacheFile(QString::number(user.getId()));
     QString res = "";
+    if(message.size() == 0){
+        userFile.deleteFile(id);
+    }
     for(int i=0;i<message.size();i++){
         QString ID = QString::number(message[i].getId());
         QString name = message[i].getName();
@@ -464,7 +484,7 @@ void UserPanel::on_userlist_itemClicked(QListWidgetItem *item)
     ui->tableWidget->setColumnWidth(0,60);
     ui->tableWidget->setColumnWidth(1,490);
     ui->tableWidget->setColumnWidth(2,60);
-    if(flag && ui->add->isEnabled() == false){
+    if(flagFriend && ui->add->isEnabled() == false){
         ui->userlist->item(0)->setSelected(false);
         ui->userlist->item(0)->setBackground(QColor(200,200,200));
         for(QSet<int>::iterator it = groupID.begin();it != groupID.end();it++){
@@ -472,7 +492,7 @@ void UserPanel::on_userlist_itemClicked(QListWidgetItem *item)
             ui->userlist->item(userlist[*it])->setBackground(QColor(200,200,200));
         }
         return;
-    }else if(flag && ui->deleteFriend->isEnabled() == false){
+    }else if(flagFriend && ui->deleteFriend->isEnabled() == false){
         ui->userlist->item(0)->setSelected(false);
         ui->userlist->item(0)->setBackground(QColor(200,200,200));
         for(QSet<int>::iterator it = groupID.begin();it != groupID.end();it++){
@@ -534,7 +554,7 @@ void UserPanel::on_userlist_itemClicked(QListWidgetItem *item)
         ui->tableWidget->clear();
         ui->tableWidget->setRowCount(message.size());
         ui->tableWidget->setAlternatingRowColors(true);
-        if(groupID.contains(id.toUtf8().toInt()) || flag){
+        if(groupID.contains(id.toUtf8().toInt()) || flagFriend){
             ui->add->show();
             ui->component->show();
             ui->deletegroup->show();
@@ -588,7 +608,7 @@ void UserPanel::on_userlist_currentItemChanged(QListWidgetItem *current, QListWi
 
 /******************** close window ********************/
 void UserPanel::closeEvent(QCloseEvent *event){
-    emit quit();
+    exit(0);
 }
 
 /******************** event filter (virtual function) ********************/
@@ -691,6 +711,7 @@ void UserPanel::on_send_clicked(){//发送消息给对方
         ui->tableWidget->scrollToBottom();
         ui->textEdit->clear();
         QString res = "grp##" + id + "##" + ui->label->text() + "##" + ui->label_2->text() + "##" + time + "##" + content + "##";
+        qDebug()<<"send data "<<res;
         udpSocket->writeDatagram(res.toUtf8().data(),QHostAddress(__IP__),9999);
     }
 }
@@ -768,8 +789,8 @@ QString UserPanel::produceGroupid(QString id){
 
 /******************** add new group component ********************/
 void UserPanel::on_add_clicked(){
-    flag = ! flag;
-    if(flag){
+    flagFriend = ! flagFriend;
+    if(flagFriend){
         ui->deleteFriend->setEnabled(false);
         Toast::instance().show(Toast::INFO,"请在左侧选择添加的群聊成员");
         ui->userlist->currentItem()->setSelected(false);
@@ -838,10 +859,13 @@ void UserPanel::Exit(){
     ui->add->setEnabled(false);
     ui->deletegroup->setEnabled(false);
     ui->deleteFriend->setEnabled(false);
+    ui->addGroup->setEnabled(false);
 }
 
 /******************** search result ********************/
 bool UserPanel::UserSearch(QString s){
+    qDebug()<<"调用 UserSearch";
+    ui->tableWidget->clear();
     ui->tableWidget->setRowCount(1);
     if(s.section("##",1,1) == "ok"||s.section("##",1,1) == "okk"){
         QString id = s.section("##",2,2);
@@ -1038,18 +1062,16 @@ void UserPanel::offlineMessage(QString s){
             QString gid = list[i+3];
             QDir dir;
             if(dir.exists("./Cache/" + QString::number(user.getId()) + "/" + MD5::Md5(gid))){
-                for(int k = 0;k<number*2;k+=2){
-                    QString time = list[i+k+4];
-                    QString content = list[i+k+5];
-                    QStringList l = content.split("@");
-                    QString name = l[0];
-                    QString data = l[1];
-                    message.push_back(UserData(idSend.toUtf8().toInt(),name,time,data));
-                }
+                QString time = list[i+4];
+                QString content = list[i+5];
+                QStringList l = content.split("@");
+                QString name = l[0];
+                QString data = l[1];
+                message.push_back(UserData(idSend.toUtf8().toInt(),name,time,data));
                 userlist[gid.toUtf8().toInt()] = -1;
                 writetoCache(gid);
             }
-            i = i + 3 + 2*number;
+            i = i + 5;
         }
         else if(list[i] == DELETE_USER){
             int id = list[i+1].toUtf8().toInt();
@@ -1095,6 +1117,7 @@ void UserPanel::offlineMessage(QString s){
             if(it!=groupID.end()){
                 groupID.erase(it);
             }
+
             ui->tableWidget->clear();
             ui->userlist->clear();
             ui->userlist->setCurrentRow(0);
@@ -1103,7 +1126,6 @@ void UserPanel::offlineMessage(QString s){
             Toast::instance().show(Toast::INFO,"群聊("+ gid +")已被管理员("+ idAdmin + ") 解散!");
             i = i + 4;
         }
-
     }
 }
 
@@ -1134,8 +1156,8 @@ void UserPanel::on_component_clicked()
 
 /******************** delete the user ********************/
 void UserPanel::on_deleteFriend_clicked(){
-    flag = !flag;
-    if(flag){
+    flagFriend = !flagFriend;
+    if(flagFriend){
         ui->add->setEnabled(false);
         ui->userlist->item(0)->setSelected(false);
         ui->userlist->item(0)->setBackground(QColor(200,200,200));
@@ -1198,8 +1220,11 @@ void UserPanel::on_deleteFriend_clicked(){
                 ui->userlist->clear();
                 ui->userlist->setCurrentRow(0);
                 ui->userlist->addItem(new QListWidgetItem(QIcon(":/QQ1.png"),"系统消息"));
+                ui->tableWidget->clear();
+                ui->textEdit->setHidden(true);
                 freshUserTable(0);
                 Toast::instance().show(Toast::INFO,"删除好友成功!");
+                return;
             }
             else{
                 Toast::instance().show(Toast::INFO,"删除已取消!");
@@ -1287,6 +1312,8 @@ void UserPanel::on_deletegroup_clicked()
                     if(it!=groupID.end()){
                         groupID.erase(it);
                     }
+                    if(groupID.isEmpty())
+                        groupID.clear();
                 }
                 qSort(toBeDelete.begin(),toBeDelete.end(),std::greater<int>());
                 readfromCache(QString::number(user.getId()));

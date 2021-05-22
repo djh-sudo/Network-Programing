@@ -31,8 +31,7 @@ Register::Register(QWidget *parent) :
     QIcon error;
     error.addFile(tr(":/error.png"));
     ui->connectServer->setIcon(error);
-    //
-//    time->start(1000);
+
     connect(time,&QTimer::timeout,this,[=]{
         QString ip = __IP__;
         qint16 port = 8888;
@@ -84,6 +83,7 @@ Register::Register(QWidget *parent) :
 
 Register::~Register()
 {
+    qDebug()<<"~Register";
     if(time->isActive())
         time->stop();
     delete time;
@@ -189,19 +189,21 @@ void Register::on_toolButton_released()
 
 void Register::on_pushButton_7_clicked()
 {
-    if(time->isActive()){
-        time->stop();
-    }
     if(socket!=NULL){
         socket->disconnectFromHost();
         socket->close();
+    }
+    if(time->isActive()){
+        time->stop();
     }
     this->hide();
     emit showClient();
     this->close();
 }
 void Register::showReg(){
-    time->start(1000);
+    if(time!=nullptr){
+        time->start(1000);
+    }
     this->show();
 }
 
@@ -226,20 +228,18 @@ void Register::on_connectServer_clicked()
 
 void Register::on_pushButton_9_clicked()
 {
-    if(time->isActive()){
-        time->stop();
-    }
     if(socket!=NULL){
         socket->disconnectFromHost();
         socket->close();
+    }
+    if(time->isActive()){
+        time->stop();
     }
     this->hide();
     emit showClient();
     this->close();
 }
-void Register::closeEvent(QCloseEvent *event){
-    emit quit();
-}
+
 QString Register::produceId(){
     QDateTime time = QDateTime::currentDateTime();
     QString s = time.toString("yyyy-MM-dd hh:mm:ss");

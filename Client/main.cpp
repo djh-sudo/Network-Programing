@@ -17,16 +17,15 @@ int main(int argc, char *argv[])
     Register r;
     w.setFixedSize(542,342);
     w.setWindowTitle("QTQQ-Client @copyright 2021 by DJH");
+    w.setAttribute(Qt::WA_DeleteOnClose);
 
     u.setFixedSize(900,810);
     u.setWindowTitle("QTQQ-Client");
 
     r.setFixedSize(690,400);
     r.setWindowTitle("QTQQ-Client-Register");
-
+    r.setAttribute(Qt::WA_DeleteOnClose);
     w.show();
-
-    QObject::connect(&u,SIGNAL(quit()),&r,SLOT(Close()));
 
     QObject::connect(&w,SIGNAL(regShow()),&r,SLOT(showReg()));
     QObject::connect(&w,SIGNAL(panShow(QString)),&u,SLOT(showPan(QString)));
