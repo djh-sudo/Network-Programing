@@ -93,8 +93,8 @@ Server::Server(QWidget *parent)
     db = new DataBase("SERVER","DATABASE.db",this);
     connect(db,SIGNAL(Send(QString)),this,SLOT(Handle(QString)));
     db->inicialTable();
-    db->createTable("userInfo");
-    db->createGroup("userGroup");
+    db->createTable(USERINFO_DATABASE_TABLE);
+    db->createGroup(USERGROUP_DATABASE_TABLE);
     inicialUserTabel();
     inicialUserGroup();
 
@@ -126,7 +126,7 @@ Server::Server(QWidget *parent)
             int uid = SocketMap[hash];
             if(uid!=0){
                 ui->online->append("<" + QString::number(uid) + "> offline");
-                db->resetState("userInfo",uid);
+                db->resetState(USERINFO_DATABASE_TABLE,uid);
                 int k = userlist[uid];
                 ui->listWidget->item(k)->setIcon(QIcon(":/off.png"));
                 ui->listWidget->item(k)->setTextColor(QColor(139,139,137));
@@ -167,15 +167,15 @@ Server::Server(QWidget *parent)
                     for(int k = 0;k<number;k++){
                         QString idFriend = content[i+k+3];
                         //delete
-                        db->deleteFriend("userInfo",idSend.toUtf8().toInt());
-                        db->deleteFriend("userInfo",idFriend.toUtf8().toInt());
+                        db->deleteFriend(USERINFO_DATABASE_TABLE,idSend.toUtf8().toInt());
+                        db->deleteFriend(USERINFO_DATABASE_TABLE,idFriend.toUtf8().toInt());
                         db->deleteFriendData(idSend,idFriend.toUtf8().toInt());
                         db->deleteFriendData(idFriend,idSend.toUtf8().toInt());
-                        if(db->checkState(idFriend.toUtf8().toInt(),"userInfo")){
+                        if(db->checkState(idFriend.toUtf8().toInt(),USERINFO_DATABASE_TABLE)){
                             QString s = "del##"+idSend+"##";
                             udpSend(idFriend.toUtf8().toInt(),s);
                         }else{
-                            saveLocalCache(idFriend.toUtf8().toInt(),idSend.toUtf8().toInt(),"del","",currentTime());
+                            saveLocalCache(DELETE_USERS,idFriend.toUtf8().toInt(),idSend.toUtf8().toInt(),"del","",currentTime());
                         }
                     }
                     i = i + 3 + number;
@@ -230,30 +230,30 @@ Server::Server(QWidget *parent)
                     }
                     i = i + number + 4;
                 }
-                else if(content[i] == "delg"){//退出群聊
+                else if(content[i] == EXIT_FROM_GROUP){//退出群聊
                     int number = content[i+2].toUtf8().toInt();
                     QString s = QString(buffer).section("##",i,i+number+3);
                     QString uid = QString(buffer).section("##",1,1);
                     for(int k=0;k<number;k++){
                         int gid = content[i+k+3].toUtf8().toInt();
-                        QString messageHead = "delg";
+                        QString messageHead = EXIT_FROM_GROUP;
                         QString res = QString::number(gid) + "#" + uid + "#";
-                        if(db->getGroupAdmin("userGroup",gid) == uid){
-                            messageHead = "dela";
+                        if(db->getGroupAdmin(USERGROUP_DATABASE_TABLE,gid) == uid){
+                            messageHead = ADMIN_EXIT_FROM_GROUP;
                             res = QString::number(gid);
                         }
                         QString Component = db->getAllGroupInfo(gid);
                         QStringList list = Component.split("##");
                         //数据库操作
-                        if(messageHead == "dela"){
-                            if(db->deleteUserGroup("userGroup",QString::number(gid))){
+                        if(messageHead == ADMIN_EXIT_FROM_GROUP){
+                            if(db->deleteUserGroup(USERGROUP_DATABASE_TABLE,QString::number(gid))){
                                 ui->data->append("[# deleteGroup] drop group <" + QString::number(gid) + " > is ok!");
                             }
                             else{
                                 ui->data->append("[# deleteGroup] drop group <" + QString::number(gid) + " > is failed!");
                             }
                         }else{
-                            if(db->deleteComponent("userGroup",QString::number(gid),uid)){
+                            if(db->deleteComponent(USERGROUP_DATABASE_TABLE,QString::number(gid),uid)){
                                 ui->online->append("[# deleteComponent] user <" + uid +"> has been moved out!");
                             }
                             else{
@@ -265,13 +265,13 @@ Server::Server(QWidget *parent)
                                 break;
                             if(it == uid)
                                 continue;
-                            if(db->checkState(it.toUtf8().toInt(),"userInfo")){
+                            if(db->checkState(it.toUtf8().toInt(),USERINFO_DATABASE_TABLE)){
                                 udpSend(it.toUtf8().toInt(),messageHead+ "##" + res);
                             }else{
                                 QString time = currentTime();
                                 int idRev = it.toUtf8().toInt();
                                 int idSend = uid.toUtf8().toInt();
-                                saveLocalCache(idRev,idSend,messageHead,QString::number(gid),time);
+                                saveLocalCache(messageHead,idRev,idSend,messageHead,QString::number(gid),time);
                             }
                         }
                     }
@@ -297,7 +297,6 @@ Server::Server(QWidget *parent)
         QHostAddress address;
         udpSocket->readDatagram(array.data(),array.size(),&address,&port);
         QString res = array.data();
-//        ui->online->append("[# debug] "+res);
         if(res.section("##",0,0) == OTHER_UDP_MESSAGE){
             QString idSend = res.section("##",1,1);
             QString idRev = res.section("##",2,2);
@@ -305,7 +304,7 @@ Server::Server(QWidget *parent)
             QString time = res.section("##",4,4);
             QString content = res.section("##",5,5);
             ui->online->append("[#udp rev] revice message from user <" + idSend+"> at " +time);
-            bool flag = db->checkState(idRev.toUtf8().toInt(),"userInfo");
+            bool flag = db->checkState(idRev.toUtf8().toInt(),USERINFO_DATABASE_TABLE);
             if(flag){
                 res = "oth##" + idSend + "##" + name + "##" +time + "##" + content + "##";
                 udpSend(idRev.toUtf8().toInt(),res);
@@ -313,7 +312,7 @@ Server::Server(QWidget *parent)
             else{//存到缓存，对方不在线
                 UserData data =UserData(name,time,content);
                 handleMessage(data,idRev,idSend);
-                writetoCache(idRev,idSend);
+                writetoCache("oth",idRev,idSend);
             }
         }else if(res.section("##",0,0) == GROUP_MESSAGE){
             QString idSend = res.section("##",1,1);
@@ -332,11 +331,11 @@ Server::Server(QWidget *parent)
                     break;
                 if(it == idSend)
                     continue;
-                if(db->checkState(it.toUtf8().toInt(),"userInfo")){
+                if(db->checkState(it.toUtf8().toInt(),USERINFO_DATABASE_TABLE)){
                     udpSend(it.toUtf8().toInt(),"grp##" + sendContent);
                 }else{
                     int idRev = it.toUtf8().toInt();
-                    saveLocalCache(idRev,idSend.toUtf8().toInt(),"grp@"+gid,sendContent1,time);
+                    saveLocalCache("grp",idRev,idSend.toUtf8().toInt(),gid,sendContent1,time);
                 }
             }
         }
@@ -346,68 +345,37 @@ Server::Server(QWidget *parent)
 
 /********************* user login *********************/
 int Server::userLogin(int id, QString password){
-    int res = db->checkUser("userInfo",id,MD5::Md5(password));
+    int res = db->checkUser(USERINFO_DATABASE_TABLE,id,MD5::Md5(password));
     return res;
 }
 
 /********************* user register *********************/
 bool Server::userRegister(int id, QString userName,QString password,int friendNumber){
-    return db->insertData("userInfo",id,userName,MD5::Md5(password),friendNumber);
+    return db->insertData(USERINFO_DATABASE_TABLE,id,userName,MD5::Md5(password),friendNumber);
 }
 
 /********************* write message into loca cache file *********************/
-void Server::writetoCache(QString idRev,QString idSend){//idRev收
-    CacheFile file = CacheFile(idRev);
+void Server::writetoCache(QString messageHead,QString idRev,QString idSend){//idRev收
+    CacheFile file = CacheFile();
     QString res = "";
     for(int i=0;i<message.value(idRev.toUtf8().toInt()).value(idSend.toUtf8().toInt()).size();i++){
         QString name = message.value(idRev.toUtf8().toInt()).value(idSend.toUtf8().toInt())[i].getName();
         QString time = message.value(idRev.toUtf8().toInt()).value(idSend.toUtf8().toInt())[i].getTime();
         QString content = message.value(idRev.toUtf8().toInt()).value(idSend.toUtf8().toInt())[i].getContent();
-        res += name+ "##" +time + "##" + content + "\n";
+        res += messageHead + "##" + idSend + "##" + name+ "##" +time + "##" + content + "\n";
     }
-    file.writeFile(idSend,res);
+    file.writeFile(idRev,res);
     message.clear();
 }
 
 /********************* read the information from local cache file *********************/
-void Server::readfromCache(QString idRev){//从id账号中读取它的信息到内存
-    CacheFile file = CacheFile(idRev);//idRev是文件夹名字
+QStringList Server::readfromCache(QString idRev){//从id账号中读取它的信息到内存
+    CacheFile file = CacheFile();//idRev是文件夹名字
     //遍历文件夹
-    QDir dir(file.getPath());
-    dir.setSorting(QDir::Time|QDir::Reversed);
-    QString path = file.getPath();
-    if(!dir.exists()){
-        ui->online->append("[# readfromCache] error: dir is not exists!");
-        return;
-    }
-    //读入内存message
-    QFileInfoList fileList = dir.entryInfoList();
-    int count = fileList.count();
-    QMap<int,QVector<UserData>>map;
-    map.clear();
-    for(int i=0;i<count;i++){
-        QString fileName = fileList[i].baseName();
-        if(fileName == ""){
-            continue;
-        }
-        QStringList list = file.readFile(fileName);
-        QVector<UserData>temp;
-        temp.clear();
-        for(int k=0;k<list.size();k++){//读取文件内的全部内容,去掉. ..
-            QString name = list[k].section("##",0,0);
-            QString time = list[k].section("##",1,1);
-            QString content = list[k].section("##",2,2);
-            temp.push_back(UserData(name,time,content));
-        }
-        map.insert(fileName.toUtf8().toInt(),temp);
-        file.deleteFile(fileName);
-    }
-    message[idRev.toUtf8().toInt()] = map;//覆盖
-    map.clear();
-    if(dir.isEmpty()){
-        dir.removeRecursively();
-        ui->data->append("[# readfromCache] dir <" + idRev + "> is released!");
-    }
+    QStringList res =  file.readFile(idRev);
+    file.deleteFile(idRev);
+    ui->data->append("[# readfromCache] <" + idRev + "> is released!");
+    return res;
 }
 
 /********************* disconstruction function *********************/
@@ -478,18 +446,18 @@ void Server::udpSend(int idRecv, QString s){
 }
 
 /********************* save infomation to local cache file *********************/
-void Server::saveLocalCache(int idRev,int idSend,QString name, QString content,QString time){
+void Server::saveLocalCache(QString messageHead,int idRev,int idSend,QString name, QString content,QString time){
     UserData data =UserData(name,time,content);
     handleMessage(data,QString::number(idRev),QString::number(idSend));
-    writetoCache(QString::number(idRev),QString::number(idSend));
+    writetoCache(messageHead,QString::number(idRev),QString::number(idSend));
 }
 
 /********************* handle user event *********************/
 bool Server::addFriend(QString buffer){//3
     QString idFriend = QString(buffer).section("##",1,1);//接收请求的人
     QString idMine = QString(buffer).section("##",2,2);//请求添加好友的人
-    bool flag = db->checkState(idFriend.toUtf8().toInt(),"userInfo");
-    QString Info = db->allData("userInfo",idMine.toUtf8().toInt());
+    bool flag = db->checkState(idFriend.toUtf8().toInt(),USERINFO_DATABASE_TABLE);
+    QString Info = db->allData(USERINFO_DATABASE_TABLE,idMine.toUtf8().toInt());
     QString name = Info.section("##",1,1);
     QString addTime = currentTime();
     if(flag){//被添加的用户在线
@@ -503,28 +471,28 @@ bool Server::addFriend(QString buffer){//3
         UserData data =UserData(name,addTime,name+"请求添加你为好友!");
         handleMessage(data,idFriend,idMine);
         ui->online->append("[#save at the service] write to Cache is over!");
-        writetoCache(idFriend,idMine);//idrev,idsend
+        writetoCache(ADD_FRIEND_OFFLINE,idFriend,idMine);//idrev,idsend
         return true;
     }
 }
 bool Server::agreementFriend(QString buffer,QTcpSocket* socket){//3
     QString idMine = QString(buffer).section("##",1,1);//申请添加好友人
     QString idFriend = QString(buffer).section("##",2,2);//收到请求的人[在线]
-    bool flag1 = db->insertData("userInfo",idMine,idMine.toUtf8().toInt(),idFriend.toUtf8().toInt());
-    bool flag2 = db->insertData("userInfo",idFriend,idFriend.toUtf8().toInt(),idMine.toUtf8().toInt());
+    bool flag1 = db->insertData(USERINFO_DATABASE_TABLE,idMine,idMine.toUtf8().toInt(),idFriend.toUtf8().toInt());
+    bool flag2 = db->insertData(USERINFO_DATABASE_TABLE,idFriend,idFriend.toUtf8().toInt(),idMine.toUtf8().toInt());
     if(flag1){
-        flag1 = db->addFriend("userInfo",idMine.toUtf8().toInt());
-        flag2 = db->addFriend("userInfo",idFriend.toUtf8().toInt());
+        flag1 = db->addFriend(USERINFO_DATABASE_TABLE,idMine.toUtf8().toInt());
+        flag2 = db->addFriend(USERINFO_DATABASE_TABLE,idFriend.toUtf8().toInt());
         if(flag1 && flag2){
-            QString data = db->allData("userInfo",idMine.toUtf8().toInt());
+            QString data = db->allData(USERINFO_DATABASE_TABLE,idMine.toUtf8().toInt());
             QString ack = "agr##" + idMine + "##" + data.section("##",1,1) + "##";
             socket->write(ack.toUtf8().data());//反馈给同意的一方
             //判断申请者
-            bool flag = db->checkState(idMine.toUtf8().toInt(),"userInfo");
+            bool flag = db->checkState(idMine.toUtf8().toInt(),USERINFO_DATABASE_TABLE);
             if(flag){//申请者在线
                 QString ip = USER[idMine.toUtf8().toInt()].getIp();
                 qint16 port = USER[idMine.toUtf8().toInt()].getUdpPort();
-                QString name = db->allData("userInfo",idMine.toUtf8().toInt()).section("##",1,1);
+                QString name = db->allData(USERINFO_DATABASE_TABLE,idMine.toUtf8().toInt()).section("##",1,1);
                 int k = userlist[idFriend.toUtf8().toInt()];
                 QString friendName = ui->listWidget->item(k)->text().section("\n",1,1).section(" ",2,2);
                 QString res = "uagr##" + idFriend + "##"+friendName+"##"+currentTime()+"##"+"添加为好友成功!##";
@@ -533,10 +501,10 @@ bool Server::agreementFriend(QString buffer,QTcpSocket* socket){//3
 
             }
             else{//申请者离线
-                data = db->allData("userInfo",idFriend.toUtf8().toInt());
+                data = db->allData(USERINFO_DATABASE_TABLE,idFriend.toUtf8().toInt());
                 UserData userdata =UserData(data.section("##",1,1),"","添加为好友成功!");
                 handleMessage(userdata,idMine,idFriend);
-                writetoCache(idMine,idFriend);
+                writetoCache(AGREEMENT_TO_BE_FRIEND_OFFLINE,idMine,idFriend);
                 return true;
             }
         }
@@ -547,7 +515,7 @@ bool Server::agreementFriend(QString buffer,QTcpSocket* socket){//3
 bool Server::SearchFriend(QString buffer, QTcpSocket *socket){//3
     int id = QString(buffer).section("##",1,1).toUtf8().toInt();
     QString idSend = QString(buffer).section("##",2,2);
-    QString res = db->allData("userInfo",id);
+    QString res = db->allData(USERINFO_DATABASE_TABLE,id);
     res = res.section("##",0,0) + "##" + res.section("##",1,1)+"##";//只截取id和name
     if(res!="####"){
         bool flag = db->is_Friend(idSend,QString::number(id));
@@ -569,62 +537,18 @@ bool Server::UserLogin(QString buffer,QTcpSocket*socket){//3
     QString userId = QString(buffer).section("##",1,1);
     QString password = QString(buffer).section("##",2,2);
     //检查是否在线
-    bool flag = db->checkState(userId.toUtf8().toInt(),"userInfo");
+    bool flag = db->checkState(userId.toUtf8().toInt(),USERINFO_DATABASE_TABLE);
     if(flag == false){
-        int res = db->checkUser("userInfo",userId.toUtf8().toInt(),password);
+        int res = db->checkUser(USERINFO_DATABASE_TABLE,userId.toUtf8().toInt(),password);
         if(res == 1){
-            db->setState("userInfo",userId.toUtf8().toInt());//上线
-            QString data = db->allData("userInfo",userId.toUtf8().toInt());//获取相关的信息
+            db->setState(USERINFO_DATABASE_TABLE,userId.toUtf8().toInt());//上线
+            QString data = db->allData(USERINFO_DATABASE_TABLE,userId.toUtf8().toInt());//获取相关的信息
             int uid = data.section("##",0,0).toUtf8().toInt();
-            readfromCache(QString::number(uid));
+
+            QStringList rawData = readfromCache(QString::number(uid));
             QString res = "";
-            int count = 0;
-            for(auto &it : message[uid]){
-                int idSend = message[uid].keys()[count++];//谁发送的消息
-                qDebug()<<"who "<<idSend;
-
-                QString tempAll = "";
-                for(int i=0;i<it.size();i++){
-                    QString name = it[i].getName();
-                    QString time = it[i].getTime();
-                    QString content = it[i].getContent();
-                    QString temp = time + "##" + content+ "##";
-
-//                    ui->online->append("[# debug ] " + temp);
-                    QString head = "";
-                    if (content == name + "请求添加你为好友!"){
-                        head =  "msg##";
-                    }
-                    else if(content == "添加为好友成功!"){
-                        head = "uagr##";
-                    }
-                    else if(name.contains(GROUP_MESSAGE)){//群聊信息
-                        head = "grp##" + QString::number(it.size())+"##";
-                        name = name.section("@",1,1);
-                    }
-                    else if(name != "grp" && content.contains("@")){//添加群聊
-                        head = "addaf##";
-                    }
-                    else if(name != "grp" && content.contains("$")){
-                        head = "addgf##";
-                    }
-                    else if(name == DELETE_USERS){
-                        head = "del##";
-                    }
-                    else if(name == "delg"){
-                        head = "delg##";
-                    }
-                    else if(name == "dela"){
-                        head = "dela##";
-                    }
-                    else{
-                        head = "oth##";
-                    }
-                    tempAll = tempAll + head + QString::number(idSend) + "##" + name + "##" + temp;
-
-                }
-                res = tempAll + res;
-            }
+            for(int k=0;k<rawData.size();k++)
+                res += rawData[k] + "##";
             qDebug()<<"发送给客户端的消息内容 "<<res;
             socket->write(res.toUtf8().data());
             ui->online->append("user <" + QString::number(uid) + "> who's message is sent out all");
@@ -650,7 +574,6 @@ bool Server::UserLogin(QString buffer,QTcpSocket*socket){//3
     else{
         QString res = QString("[# %1,%2]").arg(socket->peerAddress().toString()).arg(socket->peerPort());
         ui->online->append(res+" is already online! connect! successfully");
-        //
         return true;
     }
 }
@@ -658,7 +581,7 @@ bool Server::UserRegister(QString buffer,QTcpSocket*socket){//4
     QString id = buffer.section("##",1,1);
     QString name = buffer.section("##",2,2);
     QString psw =buffer.section("##",3,3);
-    bool flag = db->insertData("userInfo",id.toUtf8().toInt(),name,MD5::Md5(psw),0);
+    bool flag = db->insertData(USERINFO_DATABASE_TABLE,id.toUtf8().toInt(),name,MD5::Md5(psw),0);
     if(flag){
         bool isSuccess = db->createTable(id.toUtf8().toInt());
         if(isSuccess){
@@ -689,8 +612,8 @@ bool Server::UserCreateGroup(QString buffer,QTcpSocket*socket){//4
     QString gid = buffer.section("##",1,1);
     QString name = buffer.section("##",2,2);
     QString uid = buffer.section("##",3,3);
-    if(db->insertComponent("userGroup",gid,uid,name)){
-        if(db->createUserGroup("userGroup",gid) && db->addComponent("userGroup",gid,uid))
+    if(db->insertComponent(USERGROUP_DATABASE_TABLE,gid,uid,name)){
+        if(db->createUserGroup(USERGROUP_DATABASE_TABLE,gid) && db->addComponent(USERGROUP_DATABASE_TABLE,gid,uid))
             ui->online->append("[# UserCreateGroup] for user <" + uid +"> is successfully!");
         ui->listWidget_2->addItem(new QListWidgetItem(QIcon(":/group.png"),"group id " + gid + "(" + name + ")\nAdmin " + uid));
         int k = ui->listWidget_2->count();
@@ -707,7 +630,7 @@ bool Server::UserCreateGroup(QString buffer,QTcpSocket*socket){//4
 }
 void Server::UserInicial(QString buffer, QTcpSocket *socket){//2
     QString userId = QString(buffer).section("##",1,1);
-    QString data = db->allData("userInfo",userId.toUtf8().toInt());//获取相关的信息
+    QString data = db->allData(USERINFO_DATABASE_TABLE,userId.toUtf8().toInt());//获取相关的信息
     data = "login##ok##" + data;//回复客户端
     socket->write(data.toUtf8().data());
     ui->online->append("[# user login] <" + userId + "> login successfully!");
@@ -719,7 +642,7 @@ void Server::UserInicial(QString buffer, QTcpSocket *socket){//2
 bool Server::SearchGroup(QString buffer, QTcpSocket *socket){//3
     QString gid = buffer.section("##",1,1);
     QString uid = buffer.section("##",2,2);
-    QString res = db->getGroupData("userGroup",gid.toUtf8().toInt());
+    QString res = db->getGroupData(USERGROUP_DATABASE_TABLE,gid.toUtf8().toInt());
     if(res!=""){
         QString name = res.section("##",2,2);//群聊名称
         QString content;
@@ -762,20 +685,20 @@ bool Server::addComponent(QString buffer){
         if(it == ""){
             break;
         }
-        if(db->checkState(it.toUtf8().toInt(),"userInfo")){//在线
+        if(db->checkState(it.toUtf8().toInt(),USERINFO_DATABASE_TABLE)){//在线
             udpSend(it.toUtf8().toInt(),"addg##"+res);
         }else{//离线
             QString time = currentTime();
-            QString name = db->getGroupData("userGroup",gid.toUtf8().toInt()).section("##",2,2);
+            QString name = db->getGroupData(USERGROUP_DATABASE_TABLE,gid.toUtf8().toInt()).section("##",2,2);
             int idRev = it.toUtf8().toInt();
             int idSend = uid.toUtf8().toInt();
-            saveLocalCache(idRev,idSend,name,res1,time);
+            saveLocalCache(NEW_COMPONENT_ADD_FOR_OLD_OFFLINE,idRev,idSend,name,res1,time);
             //123
         }
     }
     for(int k=0;k<number;k++){
         QString uid = buffer.section("##",4+k,4+k);
-        db->addComponent("userGroup",gid,uid);
+        db->addComponent(USERGROUP_DATABASE_TABLE,gid,uid);
     }
     //获取全部的群聊成员
     QString newComponent = db->getAllGroupInfo(gid.toUtf8().toInt());
@@ -789,19 +712,19 @@ bool Server::addComponent(QString buffer){
         allUsersinfo += it + "##" + ui->listWidget->item(userlist[it.toUtf8().toInt()])->text().section("\n",1,1).section(" ",2,2) + "##";
         allUsersinfo1 += it + "@" + ui->listWidget->item(userlist[it.toUtf8().toInt()])->text().section("\n",1,1).section(" ",2,2) + "@";
     }
-    QString groupName = db->getGroupData("userGroup",gid.toUtf8().toInt()).section("##",2,2);
-    int groupNumber = db->getGroupNumber("userGroup",gid);
+    QString groupName = db->getGroupData(USERGROUP_DATABASE_TABLE,gid.toUtf8().toInt()).section("##",2,2);
+    int groupNumber = db->getGroupNumber(USERGROUP_DATABASE_TABLE,gid);
     allUsersinfo = QString::number(groupNumber) + "##" + gid + "##" + groupName +"##" + allUsersinfo;
     for(int k = 0; k < number; k++){
         QString id = buffer.section("##",4+k,4+k);
-        if(db->checkState(id.toUtf8().toInt(),"userInfo")){
+        if(db->checkState(id.toUtf8().toInt(),USERINFO_DATABASE_TABLE)){
             udpSend(id.toUtf8().toInt(),"adda##" + allUsersinfo);
         }else{
             QString time = currentTime();
             int idRev = id.toUtf8().toInt();
             int idSend = uid.toUtf8().toInt();
             QString content = QString::number(groupNumber) + "@" + gid + "@" + allUsersinfo1;
-            saveLocalCache(idRev,idSend,groupName,content,time);
+            saveLocalCache(NEW_COMPONENT_ADD_FOR_NEW,idRev,idSend,groupName,content,time);
         }
     }
     return true;
@@ -1066,8 +989,8 @@ void Server::Fail_1(){
     return;
 }
 void Server::inicialUserTabel(){
-    int number = db->getUserNumber("userInfo");
-    QString data = db->getAllUserInfo("userInfo");
+    int number = db->getUserNumber(USERINFO_DATABASE_TABLE);
+    QString data = db->getAllUserInfo(USERINFO_DATABASE_TABLE);
     ui->listWidget->clear();
     for(unsigned int i = 0;i < 3*number;i = i + 3){
         QListWidgetItem*item = new QListWidgetItem(QIcon(":/off.png"),"user id " + data.section("##",i,i)+"\nuser name "+data.section("##",i+1,i+1) + " ");
@@ -1077,8 +1000,8 @@ void Server::inicialUserTabel(){
     }
 }
 void Server::inicialUserGroup(){
-    int number = db->getGroupNumber("userGroup");
-    QString data = db->getAllGroupInfo("userGroup");
+    int number = db->getGroupNumber(USERGROUP_DATABASE_TABLE);
+    QString data = db->getAllGroupInfo(USERGROUP_DATABASE_TABLE);
     ui->listWidget_2->clear();
     for(unsigned int i = 0;i < number*3;i = i + 3){
         ui->listWidget_2->addItem(new QListWidgetItem(QIcon(":/group.png"),"group id "+data.section("##",i,i) + "(" + data.section("##",i+2,i+2)+")\nAdmin "+data.section("##",i+1,i+1)));

@@ -23,15 +23,15 @@ public:
     explicit Server(QWidget *parent = nullptr);
     int userLogin(int id,QString password);
     bool userRegister(int id,QString userName,QString password,int friendNumber);
-    void readfromCache(QString idRev);//把文件数据读入到内存
-    void writetoCache(QString idRev,QString idSend);//把文件数据写入磁盘
+    QStringList readfromCache(QString idRev);//把文件数据读入到内存
+    void writetoCache(QString messageHead,QString idRev,QString idSend);//把文件数据写入磁盘
     void assembleData(QVector<UserData> data,QString idRev,QString idSend);
     void handleMessage(UserData data,QString idRev,QString idSend);
     QString currentTime();
     void inicialUserTabel();
     void inicialUserGroup();
     void udpSend(int idRecv,QString s);
-    void saveLocalCache(int idRev,int idSend,QString name, QString content,QString time);
+    void saveLocalCache(QString messageHead,int idRev,int idSend,QString name, QString content,QString time);
     void DISK();
     /*用户行为处理函数*/
     bool addFriend(QString buffer);
