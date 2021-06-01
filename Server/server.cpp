@@ -131,7 +131,7 @@ Server::Server(QWidget *parent)
                 ui->listWidget->item(k)->setIcon(QIcon(":/off.png"));
                 ui->listWidget->item(k)->setTextColor(QColor(139,139,137));
                 QMap<QString,int>::iterator it = SocketMap.find(hash);
-                if(it!=SocketMap.end()){
+                if(it != SocketMap.end()){
                     SocketMap.erase(it);
                 }
             }
@@ -140,20 +140,20 @@ Server::Server(QWidget *parent)
         //send message trigger readyread[Tcp information]
         connect(socket, &QTcpSocket::readyRead,[=](){
             QByteArray buffer = socket->readAll();
-            QStringList content = QString(buffer).split("##");
+            QStringList content = QString(buffer).split(SEGMENTATION);
             for(unsigned int i = 0;i<content.size();){
                 if(content[i] == USER_LOGIN){//处理登录请求
-                    QString s = QString(buffer).section("##",i,i+3);
+                    QString s = QString(buffer).section(SEGMENTATION,i,i+3);
                     UserLogin(s,socket);
                     i = i + 3;
                 }
                 else if(content[i] == USER_REGISTER){//处理注册请求
-                    QString s =QString(buffer).section("##",i,i+4);
+                    QString s =QString(buffer).section(SEGMENTATION,i,i+4);
                     UserRegister(s,socket);
                     i = i + 4;
                 }
                 else if(content[i] == USER_ADD_FRIEND){//添加好友请求
-                    QString s = QString(buffer).section("##",i,i+3);
+                    QString s = QString(buffer).section(SEGMENTATION,i,i+3);
                     if(addFriend(s) == true){
                         ui->online->append("[# add] add friend is successfully!");
                     }
@@ -172,7 +172,7 @@ Server::Server(QWidget *parent)
                         db->deleteFriendData(idSend,idFriend.toUtf8().toInt());
                         db->deleteFriendData(idFriend,idSend.toUtf8().toInt());
                         if(db->checkState(idFriend.toUtf8().toInt(),USERINFO_DATABASE_TABLE)){
-                            QString s = "del##"+idSend+"##";
+                            QString s = MESSAGE_HEAD_DELETE + idSend + SEGMENTATION;
                             udpSend(idFriend.toUtf8().toInt(),s);
                         }else{
                             saveLocalCache(DELETE_USERS,idFriend.toUtf8().toInt(),idSend.toUtf8().toInt(),"del","",currentTime());
@@ -181,7 +181,7 @@ Server::Server(QWidget *parent)
                     i = i + 3 + number;
                 }
                 else if(content[i] == USER_SEARCH){
-                    QString s = QString(buffer).section("##",i,i+2);
+                    QString s = QString(buffer).section(SEGMENTATION,i,i+2);
                     if(SearchFriend(s,socket) == true){
                         ui->online->append("[# SearchFriend] Search Friend successfully!");
                     }
@@ -191,12 +191,12 @@ Server::Server(QWidget *parent)
                     i = i + 3;
                 }
                 else if(content[i] == USER_INICIAL){//客户端初始化完成
-                    QString s = "##" + content[i+1];
+                    QString s = SEGMENTATION + content[i+1];
                     UserInicial(s,socket);
                     i = i + 2;
                 }
                 else if(content[i] == AGREEMENT_TO_BE_FRIEND){//处理同意添加好友请求
-                    QString s = QString(buffer).section("##",i,i+3);
+                    QString s = QString(buffer).section(SEGMENTATION,i,i+3);
                     if(agreementFriend(s,socket)){
                         ui->online->append("[# agreementFriend] agr successfully");
                     }
@@ -206,12 +206,12 @@ Server::Server(QWidget *parent)
                     i = i + 3;
                 }
                 else if(content[i] == CREATE_GROUP){//创建群聊消息
-                    QString s = QString(buffer).section("##",i,i+4);
+                    QString s = QString(buffer).section(SEGMENTATION,i,i+4);
                     UserCreateGroup(s,socket);
                     i = i + 4;
                 }
                 else if(content[i] == SEARCH_GROUP){//搜索群聊
-                    QString s = "##" + QString(buffer).section("##",i+1,i+2);
+                    QString s = SEGMENTATION + QString(buffer).section(SEGMENTATION,i+1,i+2);
                     if(SearchGroup(s,socket)){
                         ui->online->append("[# SearchGroup] search group is successfully!");
                     }
@@ -222,7 +222,7 @@ Server::Server(QWidget *parent)
                 }
                 else if(content[i] == ADD_GROUP_COMPONENT){//添加人员
                     int number = content[i+3].toUtf8().toInt();
-                    QString s = QString(buffer).section("##",i,i + number + 4);
+                    QString s = QString(buffer).section(SEGMENTATION,i,i + number + 4);
                     if(addComponent(s)){
                         ui->online->append("[# addComponent] add group component is successfully!");
                     }else{
@@ -232,8 +232,8 @@ Server::Server(QWidget *parent)
                 }
                 else if(content[i] == EXIT_FROM_GROUP){//退出群聊
                     int number = content[i+2].toUtf8().toInt();
-                    QString s = QString(buffer).section("##",i,i+number+3);
-                    QString uid = QString(buffer).section("##",1,1);
+                    QString s = QString(buffer).section(SEGMENTATION,i,i+number+3);
+                    QString uid = QString(buffer).section(SEGMENTATION,1,1);
                     for(int k=0;k<number;k++){
                         int gid = content[i+k+3].toUtf8().toInt();
                         QString messageHead = EXIT_FROM_GROUP;
@@ -243,7 +243,7 @@ Server::Server(QWidget *parent)
                             res = QString::number(gid);
                         }
                         QString Component = db->getAllGroupInfo(gid);
-                        QStringList list = Component.split("##");
+                        QStringList list = Component.split(SEGMENTATION);
                         //数据库操作
                         if(messageHead == ADMIN_EXIT_FROM_GROUP){
                             if(db->deleteUserGroup(USERGROUP_DATABASE_TABLE,QString::number(gid))){
@@ -266,7 +266,7 @@ Server::Server(QWidget *parent)
                             if(it == uid)
                                 continue;
                             if(db->checkState(it.toUtf8().toInt(),USERINFO_DATABASE_TABLE)){
-                                udpSend(it.toUtf8().toInt(),messageHead+ "##" + res);
+                                udpSend(it.toUtf8().toInt(),messageHead+ SEGMENTATION + res);
                             }else{
                                 QString time = currentTime();
                                 int idRev = it.toUtf8().toInt();
@@ -281,7 +281,7 @@ Server::Server(QWidget *parent)
                 else if(content[i] == ""){
                     i = i + 1;
                 }
-                else{//消息解析失败
+                else{
                     i = i + 1;
                 }
             }
@@ -297,34 +297,34 @@ Server::Server(QWidget *parent)
         QHostAddress address;
         udpSocket->readDatagram(array.data(),array.size(),&address,&port);
         QString res = array.data();
-        if(res.section("##",0,0) == OTHER_UDP_MESSAGE){
-            QString idSend = res.section("##",1,1);
-            QString idRev = res.section("##",2,2);
-            QString name = res.section("##",3,3);
-            QString time = res.section("##",4,4);
-            QString content = res.section("##",5,5);
+        if(res.section(SEGMENTATION,0,0) == OTHER_UDP_MESSAGE){
+            QString idSend = res.section(SEGMENTATION,1,1);
+            QString idRev = res.section(SEGMENTATION,2,2);
+            QString name = res.section(SEGMENTATION,3,3);
+            QString time = res.section(SEGMENTATION,4,4);
+            QString content = res.section(SEGMENTATION,5,5);
             ui->online->append("[#udp rev] revice message from user <" + idSend+"> at " +time);
             bool flag = db->checkState(idRev.toUtf8().toInt(),USERINFO_DATABASE_TABLE);
             if(flag){
-                res = "oth##" + idSend + "##" + name + "##" +time + "##" + content + "##";
+                res = MESSAGE_HEAD_OTHER + idSend + SEGMENTATION + name + SEGMENTATION +time + SEGMENTATION + content + SEGMENTATION;
                 udpSend(idRev.toUtf8().toInt(),res);
             }
             else{//存到缓存，对方不在线
                 UserData data =UserData(name,time,content);
                 handleMessage(data,idRev,idSend);
-                writetoCache("oth",idRev,idSend);
+                writetoCache(OTHER_UDP_MESSAGE,idRev,idSend);
             }
-        }else if(res.section("##",0,0) == GROUP_MESSAGE){
-            QString idSend = res.section("##",1,1);
-            QString gid = res.section("##",2,2);
-            QString gname = res.section("##",3,3);
+        }else if(res.section(SEGMENTATION,0,0) == GROUP_MESSAGE){
+            QString idSend = res.section(SEGMENTATION,1,1);
+            QString gid = res.section(SEGMENTATION,2,2);
+            QString gname = res.section(SEGMENTATION,3,3);
             QString name = ui->listWidget->item(userlist[idSend.toUtf8().toInt()])->text().section("\n",1,1).section(" ",2,2);
-            QString time = res.section("##",4,4);
-            QString content = res.section("##",5,5);
+            QString time = res.section(SEGMENTATION,4,4);
+            QString content = res.section(SEGMENTATION,5,5);
             ui->online->append("[#udp rev] revice message from user <" + idSend + "> in group <" + gid + "> at " + time);
             QString Component = db->getAllGroupInfo(gid.toUtf8().toInt());
-            QStringList list = Component.split("##");
-            QString sendContent = idSend + "##" + name + "##" + gid + "##" + time + "##" + content + "##";
+            QStringList list = Component.split(SEGMENTATION);
+            QString sendContent = idSend + SEGMENTATION + name + SEGMENTATION + gid + SEGMENTATION + time + SEGMENTATION + content + SEGMENTATION;
             QString sendContent1 = name  + "@" + content + "@";
             for(auto it:list){
                 if(it == "")
@@ -335,7 +335,7 @@ Server::Server(QWidget *parent)
                     udpSend(it.toUtf8().toInt(),"grp##" + sendContent);
                 }else{
                     int idRev = it.toUtf8().toInt();
-                    saveLocalCache("grp",idRev,idSend.toUtf8().toInt(),gid,sendContent1,time);
+                    saveLocalCache(GROUP_MESSAGE,idRev,idSend.toUtf8().toInt(),gid,sendContent1,time);
                 }
             }
         }
@@ -362,7 +362,7 @@ void Server::writetoCache(QString messageHead,QString idRev,QString idSend){//id
         QString name = message.value(idRev.toUtf8().toInt()).value(idSend.toUtf8().toInt())[i].getName();
         QString time = message.value(idRev.toUtf8().toInt()).value(idSend.toUtf8().toInt())[i].getTime();
         QString content = message.value(idRev.toUtf8().toInt()).value(idSend.toUtf8().toInt())[i].getContent();
-        res += messageHead + "##" + idSend + "##" + name+ "##" +time + "##" + content + "\n";
+        res += messageHead + SEGMENTATION + idSend + SEGMENTATION + name+ SEGMENTATION +time + SEGMENTATION + content + "\n";
     }
     file.writeFile(idRev,res);
     message.clear();
@@ -454,14 +454,14 @@ void Server::saveLocalCache(QString messageHead,int idRev,int idSend,QString nam
 
 /********************* handle user event *********************/
 bool Server::addFriend(QString buffer){//3
-    QString idFriend = QString(buffer).section("##",1,1);//接收请求的人
-    QString idMine = QString(buffer).section("##",2,2);//请求添加好友的人
+    QString idFriend = QString(buffer).section(SEGMENTATION,1,1);//接收请求的人
+    QString idMine = QString(buffer).section(SEGMENTATION,2,2);//请求添加好友的人
     bool flag = db->checkState(idFriend.toUtf8().toInt(),USERINFO_DATABASE_TABLE);
     QString Info = db->allData(USERINFO_DATABASE_TABLE,idMine.toUtf8().toInt());
-    QString name = Info.section("##",1,1);
+    QString name = Info.section(SEGMENTATION,1,1);
     QString addTime = currentTime();
     if(flag){//被添加的用户在线
-        QString res = "agr##" + idMine + "##"+name+"##"+addTime+"##"+name+"请求添加你为好友!##";
+        QString res = MESSAGE_HEAD_AGREEMENT_TO_BE_FRIEND + idMine + SEGMENTATION+name+SEGMENTATION+addTime+SEGMENTATION+name+"请求添加你为好友!##";
         QString ip = USER[idFriend.toUtf8().toInt()].getIp();
         qint16 port = USER[idFriend.toUtf8().toInt()].getUdpPort();
         udpSocket->writeDatagram(res.toUtf8().data(),QHostAddress(ip),port);
@@ -476,8 +476,8 @@ bool Server::addFriend(QString buffer){//3
     }
 }
 bool Server::agreementFriend(QString buffer,QTcpSocket* socket){//3
-    QString idMine = QString(buffer).section("##",1,1);//申请添加好友人
-    QString idFriend = QString(buffer).section("##",2,2);//收到请求的人[在线]
+    QString idMine = QString(buffer).section(SEGMENTATION,1,1);//申请添加好友人
+    QString idFriend = QString(buffer).section(SEGMENTATION,2,2);//收到请求的人[在线]
     bool flag1 = db->insertData(USERINFO_DATABASE_TABLE,idMine,idMine.toUtf8().toInt(),idFriend.toUtf8().toInt());
     bool flag2 = db->insertData(USERINFO_DATABASE_TABLE,idFriend,idFriend.toUtf8().toInt(),idMine.toUtf8().toInt());
     if(flag1){
@@ -485,24 +485,24 @@ bool Server::agreementFriend(QString buffer,QTcpSocket* socket){//3
         flag2 = db->addFriend(USERINFO_DATABASE_TABLE,idFriend.toUtf8().toInt());
         if(flag1 && flag2){
             QString data = db->allData(USERINFO_DATABASE_TABLE,idMine.toUtf8().toInt());
-            QString ack = "agr##" + idMine + "##" + data.section("##",1,1) + "##";
+            QString ack = MESSAGE_HEAD_AGREEMENT_TO_BE_FRIEND + idMine + SEGMENTATION + data.section(SEGMENTATION,1,1) + SEGMENTATION;
             socket->write(ack.toUtf8().data());//反馈给同意的一方
             //判断申请者
             bool flag = db->checkState(idMine.toUtf8().toInt(),USERINFO_DATABASE_TABLE);
             if(flag){//申请者在线
                 QString ip = USER[idMine.toUtf8().toInt()].getIp();
                 qint16 port = USER[idMine.toUtf8().toInt()].getUdpPort();
-                QString name = db->allData(USERINFO_DATABASE_TABLE,idMine.toUtf8().toInt()).section("##",1,1);
+                QString name = db->allData(USERINFO_DATABASE_TABLE,idMine.toUtf8().toInt()).section(SEGMENTATION,1,1);
                 int k = userlist[idFriend.toUtf8().toInt()];
                 QString friendName = ui->listWidget->item(k)->text().section("\n",1,1).section(" ",2,2);
-                QString res = "uagr##" + idFriend + "##"+friendName+"##"+currentTime()+"##"+"添加为好友成功!##";
+                QString res = MESSAGE_HEAD_TO_BE_FRIEND + idFriend + SEGMENTATION+friendName+SEGMENTATION+currentTime()+SEGMENTATION+"添加为好友成功!##";
                 udpSocket->writeDatagram(res.toUtf8().data(),QHostAddress(ip),port);
                 return true;
 
             }
             else{//申请者离线
                 data = db->allData(USERINFO_DATABASE_TABLE,idFriend.toUtf8().toInt());
-                UserData userdata =UserData(data.section("##",1,1),"","添加为好友成功!");
+                UserData userdata =UserData(data.section(SEGMENTATION,1,1),"","添加为好友成功!");
                 handleMessage(userdata,idMine,idFriend);
                 writetoCache(AGREEMENT_TO_BE_FRIEND_OFFLINE,idMine,idFriend);
                 return true;
@@ -513,29 +513,29 @@ bool Server::agreementFriend(QString buffer,QTcpSocket* socket){//3
         return false;
 }
 bool Server::SearchFriend(QString buffer, QTcpSocket *socket){//3
-    int id = QString(buffer).section("##",1,1).toUtf8().toInt();
-    QString idSend = QString(buffer).section("##",2,2);
+    int id = QString(buffer).section(SEGMENTATION,1,1).toUtf8().toInt();
+    QString idSend = QString(buffer).section(SEGMENTATION,2,2);
     QString res = db->allData(USERINFO_DATABASE_TABLE,id);
-    res = res.section("##",0,0) + "##" + res.section("##",1,1)+"##";//只截取id和name
-    if(res!="####"){
+    res = res.section(SEGMENTATION,0,0) + SEGMENTATION + res.section(SEGMENTATION,1,1)+SEGMENTATION;//只截取id和name
+    if(res!=NO_INFORMATION){
         bool flag = db->is_Friend(idSend,QString::number(id));
         QString sendData = "";
         if(!flag)
-            sendData  = "search##ok##" + res;
+            sendData  = MESSAGE_HEAD_SEARCH_FRIEND_OK + res;
         else
-            sendData = "search##okk##" + res;
+            sendData = MESSAGE_HEAD_SEARCH_FRIEND_OKK + res;
         socket->write(sendData.toUtf8().data());
         return true;
     }else
     {
-        QString sendData = "search##fail##";
+        QString sendData = MESSAGE_HEAD_SEARCH_FRIEND_FAILED;
         socket->write(sendData.toUtf8().data());
         return false;
     }
 }
 bool Server::UserLogin(QString buffer,QTcpSocket*socket){//3
-    QString userId = QString(buffer).section("##",1,1);
-    QString password = QString(buffer).section("##",2,2);
+    QString userId = QString(buffer).section(SEGMENTATION,1,1);
+    QString password = QString(buffer).section(SEGMENTATION,2,2);
     //检查是否在线
     bool flag = db->checkState(userId.toUtf8().toInt(),USERINFO_DATABASE_TABLE);
     if(flag == false){
@@ -543,29 +543,28 @@ bool Server::UserLogin(QString buffer,QTcpSocket*socket){//3
         if(res == 1){
             db->setState(USERINFO_DATABASE_TABLE,userId.toUtf8().toInt());//上线
             QString data = db->allData(USERINFO_DATABASE_TABLE,userId.toUtf8().toInt());//获取相关的信息
-            int uid = data.section("##",0,0).toUtf8().toInt();
+            int uid = data.section(SEGMENTATION,0,0).toUtf8().toInt();
 
             QStringList rawData = readfromCache(QString::number(uid));
             QString res = "";
             for(int k=0;k<rawData.size();k++)
-                res += rawData[k] + "##";
-            qDebug()<<"发送给客户端的消息内容 "<<res;
+                res += rawData[k] + SEGMENTATION;
             socket->write(res.toUtf8().data());
             ui->online->append("user <" + QString::number(uid) + "> who's message is sent out all");
-            socket->write("ini##");//给客户端一个信号
+            socket->write(MESSAGE_HEAD_INITIAL);//给客户端一个信号
             USER[uid] = User(uid,socket->peerAddress().toString(),socket->peerPort(),(socket->peerPort()+1)%65535);
             QString socketHash = MD5::Md5(socket->peerAddress().toString()+QString::number(socket->peerPort()));
             SocketMap[socketHash] = uid;
             message.clear();//清空消息
         }
         else if (res == -1){//密码错误
-            QString res = "login##fail##";
+            QString res = MESSAGE_HEAD_LOGIN_FAILED;
             socket->write(res.toUtf8().data());
             ui->online->append("[# UserLogin] <" + userId + "> password is incorrect! login failed!");
             return false;
         }
         else if(res == 0){//先注册
-            QString res = "login##fail##";
+            QString res = MESSAGE_HEAD_LOGIN_FAILED;
             ui->online->append("[# UserLogin] <" + userId + "> plese regist first, login failed!");
             socket->write(res.toUtf8().data());
             return false;
@@ -578,15 +577,15 @@ bool Server::UserLogin(QString buffer,QTcpSocket*socket){//3
     }
 }
 bool Server::UserRegister(QString buffer,QTcpSocket*socket){//4
-    QString id = buffer.section("##",1,1);
-    QString name = buffer.section("##",2,2);
-    QString psw =buffer.section("##",3,3);
+    QString id = buffer.section(SEGMENTATION,1,1);
+    QString name = buffer.section(SEGMENTATION,2,2);
+    QString psw =buffer.section(SEGMENTATION,3,3);
     bool flag = db->insertData(USERINFO_DATABASE_TABLE,id.toUtf8().toInt(),name,MD5::Md5(psw),0);
     if(flag){
         bool isSuccess = db->createTable(id.toUtf8().toInt());
         if(isSuccess){
             ui->online->append("[# register at service] create database for user <" + id + "> is ok!");
-            QString res = "regis##ok##";
+            QString res = MESSAGE_HEAD_REGISTER_OK;
             ui->listWidget->addItem(new QListWidgetItem(QIcon(":/off.png"),"user id " + id + "\nuser name "+ name + " "));
             int k = ui->listWidget->count();
             ui->listWidget->item(k-1)->setTextColor(QColor(139,137,137));
@@ -609,9 +608,9 @@ bool Server::UserRegister(QString buffer,QTcpSocket*socket){//4
     }
 }
 bool Server::UserCreateGroup(QString buffer,QTcpSocket*socket){//4
-    QString gid = buffer.section("##",1,1);
-    QString name = buffer.section("##",2,2);
-    QString uid = buffer.section("##",3,3);
+    QString gid = buffer.section(SEGMENTATION,1,1);
+    QString name = buffer.section(SEGMENTATION,2,2);
+    QString uid = buffer.section(SEGMENTATION,3,3);
     if(db->insertComponent(USERGROUP_DATABASE_TABLE,gid,uid,name)){
         if(db->createUserGroup(USERGROUP_DATABASE_TABLE,gid) && db->addComponent(USERGROUP_DATABASE_TABLE,gid,uid))
             ui->online->append("[# UserCreateGroup] for user <" + uid +"> is successfully!");
@@ -619,7 +618,7 @@ bool Server::UserCreateGroup(QString buffer,QTcpSocket*socket){//4
         int k = ui->listWidget_2->count();
         ui->listWidget_2->item(k-1)->setTextColor(QColor(139,137,137));
         userlist[gid.toUtf8().toInt()] = k-1;
-        socket->write(("crp##ok##" + gid + "##" + name + "##").toUtf8().data());
+        socket->write(("crp##ok##" + gid + SEGMENTATION + name + SEGMENTATION).toUtf8().data());
         return true;
     }
     else{
@@ -629,7 +628,7 @@ bool Server::UserCreateGroup(QString buffer,QTcpSocket*socket){//4
     }
 }
 void Server::UserInicial(QString buffer, QTcpSocket *socket){//2
-    QString userId = QString(buffer).section("##",1,1);
+    QString userId = QString(buffer).section(SEGMENTATION,1,1);
     QString data = db->allData(USERINFO_DATABASE_TABLE,userId.toUtf8().toInt());//获取相关的信息
     data = "login##ok##" + data;//回复客户端
     socket->write(data.toUtf8().data());
@@ -640,19 +639,19 @@ void Server::UserInicial(QString buffer, QTcpSocket *socket){//2
 
 }
 bool Server::SearchGroup(QString buffer, QTcpSocket *socket){//3
-    QString gid = buffer.section("##",1,1);
-    QString uid = buffer.section("##",2,2);
+    QString gid = buffer.section(SEGMENTATION,1,1);
+    QString uid = buffer.section(SEGMENTATION,2,2);
     QString res = db->getGroupData(USERGROUP_DATABASE_TABLE,gid.toUtf8().toInt());
     if(res!=""){
-        QString name = res.section("##",2,2);//群聊名称
+        QString name = res.section(SEGMENTATION,2,2);//群聊名称
         QString content;
         bool flag = db->is_InGroup(gid,uid);
         if(flag){//在群聊中
-            content = "searchg##ok##" + gid + "##" + name + "##";
+            content = "searchg##ok##" + gid + SEGMENTATION + name + SEGMENTATION;
             ui->online->append("[# SearchGroup] <" + uid + "> is in " + gid);
         }
         else {//不在群聊中
-            content = "searchg##okk##" + gid + "##" + name + "##";
+            content = "searchg##okk##" + gid + SEGMENTATION + name + SEGMENTATION;
             ui->online->append("[# SearchGroup] <" + uid + "> is not in " + gid);
         }
         socket->write(content.toUtf8().data());
@@ -664,23 +663,23 @@ bool Server::SearchGroup(QString buffer, QTcpSocket *socket){//3
     }
 }
 bool Server::addComponent(QString buffer){
-    QString gid = buffer.section("##",1,1);
-    QString uid = buffer.section("##",2,2);
-    int number = buffer.section("##",3,3).toUtf8().toInt();
+    QString gid = buffer.section(SEGMENTATION,1,1);
+    QString uid = buffer.section(SEGMENTATION,2,2);
+    int number = buffer.section(SEGMENTATION,3,3).toUtf8().toInt();
     if(number<=0){
         return false;
     }
     QString s = "";
     QString s1 = "";
     for(int k=0;k<number;k++){
-        s = s + buffer.section("##",4+k,4+k) + "##" + ui->listWidget->item(userlist[buffer.section("##",4+k,4+k).toUtf8().toInt()])->text().section("\n",1,1).section(" ",2,2) + "##";
-        s1 = s1 + s1 + buffer.section("##",4+k,4+k) + "$" + ui->listWidget->item(userlist[buffer.section("##",4+k,4+k).toUtf8().toInt()])->text().section("\n",1,1).section(" ",2,2) + "$";
+        s = s + buffer.section(SEGMENTATION,4+k,4+k) + SEGMENTATION + ui->listWidget->item(userlist[buffer.section(SEGMENTATION,4+k,4+k).toUtf8().toInt()])->text().section("\n",1,1).section(" ",2,2) + SEGMENTATION;
+        s1 = s1 + s1 + buffer.section(SEGMENTATION,4+k,4+k) + "$" + ui->listWidget->item(userlist[buffer.section(SEGMENTATION,4+k,4+k).toUtf8().toInt()])->text().section("\n",1,1).section(" ",2,2) + "$";
     }
-    QString res = QString::number(number) + "##" + gid + "##" + s;//新加入用户的数据
+    QString res = QString::number(number) + SEGMENTATION + gid + SEGMENTATION + s;//新加入用户的数据
     QString res1 = QString::number(number) + "$" + gid + "$" + s1;
     //对原有成员发送新的数据包
     QString oldComponent = db->getAllGroupInfo(gid.toUtf8().toInt());
-    QStringList oldList = oldComponent.split("##");
+    QStringList oldList = oldComponent.split(SEGMENTATION);
     for(auto it:oldList){
         if(it == ""){
             break;
@@ -689,7 +688,7 @@ bool Server::addComponent(QString buffer){
             udpSend(it.toUtf8().toInt(),"addg##"+res);
         }else{//离线
             QString time = currentTime();
-            QString name = db->getGroupData(USERGROUP_DATABASE_TABLE,gid.toUtf8().toInt()).section("##",2,2);
+            QString name = db->getGroupData(USERGROUP_DATABASE_TABLE,gid.toUtf8().toInt()).section(SEGMENTATION,2,2);
             int idRev = it.toUtf8().toInt();
             int idSend = uid.toUtf8().toInt();
             saveLocalCache(NEW_COMPONENT_ADD_FOR_OLD_OFFLINE,idRev,idSend,name,res1,time);
@@ -697,26 +696,26 @@ bool Server::addComponent(QString buffer){
         }
     }
     for(int k=0;k<number;k++){
-        QString uid = buffer.section("##",4+k,4+k);
+        QString uid = buffer.section(SEGMENTATION,4+k,4+k);
         db->addComponent(USERGROUP_DATABASE_TABLE,gid,uid);
     }
     //获取全部的群聊成员
     QString newComponent = db->getAllGroupInfo(gid.toUtf8().toInt());
-    QStringList newList = newComponent.split("##");
+    QStringList newList = newComponent.split(SEGMENTATION);
     QString allUsersinfo = "";
     QString allUsersinfo1 = "";
     for(auto it:newList){
         if(it == ""){
             break;
         }
-        allUsersinfo += it + "##" + ui->listWidget->item(userlist[it.toUtf8().toInt()])->text().section("\n",1,1).section(" ",2,2) + "##";
+        allUsersinfo += it + SEGMENTATION + ui->listWidget->item(userlist[it.toUtf8().toInt()])->text().section("\n",1,1).section(" ",2,2) + SEGMENTATION;
         allUsersinfo1 += it + "@" + ui->listWidget->item(userlist[it.toUtf8().toInt()])->text().section("\n",1,1).section(" ",2,2) + "@";
     }
-    QString groupName = db->getGroupData(USERGROUP_DATABASE_TABLE,gid.toUtf8().toInt()).section("##",2,2);
+    QString groupName = db->getGroupData(USERGROUP_DATABASE_TABLE,gid.toUtf8().toInt()).section(SEGMENTATION,2,2);
     int groupNumber = db->getGroupNumber(USERGROUP_DATABASE_TABLE,gid);
-    allUsersinfo = QString::number(groupNumber) + "##" + gid + "##" + groupName +"##" + allUsersinfo;
+    allUsersinfo = QString::number(groupNumber) + SEGMENTATION + gid + SEGMENTATION + groupName +SEGMENTATION + allUsersinfo;
     for(int k = 0; k < number; k++){
-        QString id = buffer.section("##",4+k,4+k);
+        QString id = buffer.section(SEGMENTATION,4+k,4+k);
         if(db->checkState(id.toUtf8().toInt(),USERINFO_DATABASE_TABLE)){
             udpSend(id.toUtf8().toInt(),"adda##" + allUsersinfo);
         }else{
@@ -993,10 +992,10 @@ void Server::inicialUserTabel(){
     QString data = db->getAllUserInfo(USERINFO_DATABASE_TABLE);
     ui->listWidget->clear();
     for(unsigned int i = 0;i < 3*number;i = i + 3){
-        QListWidgetItem*item = new QListWidgetItem(QIcon(":/off.png"),"user id " + data.section("##",i,i)+"\nuser name "+data.section("##",i+1,i+1) + " ");
+        QListWidgetItem*item = new QListWidgetItem(QIcon(":/off.png"),"user id " + data.section(SEGMENTATION,i,i)+"\nuser name "+data.section(SEGMENTATION,i+1,i+1) + " ");
         ui->listWidget->addItem(item);
         ui->listWidget->item(i/3)->setTextColor(QColor(139,137,137));
-        userlist[data.section("##",i,i).toUtf8().toInt()] = i/3;
+        userlist[data.section(SEGMENTATION,i,i).toUtf8().toInt()] = i/3;
     }
 }
 void Server::inicialUserGroup(){
@@ -1004,13 +1003,13 @@ void Server::inicialUserGroup(){
     QString data = db->getAllGroupInfo(USERGROUP_DATABASE_TABLE);
     ui->listWidget_2->clear();
     for(unsigned int i = 0;i < number*3;i = i + 3){
-        ui->listWidget_2->addItem(new QListWidgetItem(QIcon(":/group.png"),"group id "+data.section("##",i,i) + "(" + data.section("##",i+2,i+2)+")\nAdmin "+data.section("##",i+1,i+1)));
+        ui->listWidget_2->addItem(new QListWidgetItem(QIcon(":/group.png"),"group id "+data.section(SEGMENTATION,i,i) + "(" + data.section(SEGMENTATION,i+2,i+2)+")\nAdmin "+data.section(SEGMENTATION,i+1,i+1)));
         ui->listWidget_2->item(i/3)->setTextColor(QColor(139,137,137));
-        grouplist[data.section("##",i,i).toUtf8().toInt()] = i/3;
+        grouplist[data.section(SEGMENTATION,i,i).toUtf8().toInt()] = i/3;
     }
 }
 
-/******************** get DISK information ********************/
+/******************** get DISK information[dynamic] ********************/
 void Server::DISK(){
     QList<QStorageInfo> list = QStorageInfo::mountedVolumes();
     int i = 0;

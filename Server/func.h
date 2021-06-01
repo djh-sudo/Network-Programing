@@ -29,8 +29,22 @@
 #define USERGROUP_DATABASE_TABLE "userGroup"
 #define USERINFO_DATABASE_TABLE "userInfo"
 #define SEGMENTATION "##"
+#define NO_INFORMATION "####"
 
-#define MESSAGE_HEAD_ ""
+#define MESSAGE_HEAD_DELETE "del##"
+#define MESSAGE_HEAD_OTHER "oth##"
+#define MESSAGE_HEAD_AGREEMENT_TO_BE_FRIEND "agr##"
+#define MESSAGE_HEAD_TO_BE_FRIEND "uagr##"
+#define MESSAGE_HEAD_SEARCH_FRIEND_OK "search##ok##"
+#define MESSAGE_HEAD_SEARCH_FRIEND_OKK "search##okk##"
+#define MESSAGE_HEAD_SEARCH_FRIEND_FAILED "search##fail##"
+#define MESSAGE_HEAD_INITIAL "ini##"
+#define MESSAGE_HEAD_LOGIN_FAILED "login##fail##"
+#define MESSAGE_HEAD_REGISTER_OK "regis##ok##"
+#define MESSAGE_HEAD_REGISTER_FAILED "regis##no##"
+#define MESSAGE_HEAD_CREATE_GROUP_OK "crp##ok##"
+#define MESSAGE_HEAD_CREATE_GROUP_FAILED "crp##no##"
+
 
 
 __int64 Filetime2Int64(const FILETIME &ftime);
